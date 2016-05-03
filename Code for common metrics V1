@@ -1,0 +1,31 @@
+--Metrics like visits, New unique visitors, visitors, bounce rate and page views are calculated over month and year
+CREATE OR REPLACE VIEW omniture_mt.overall_metrics_table
+(
+  year,
+  month,
+  pageviews,
+  "unique visitors",
+  visits,
+  "bounce rate"
+)
+AS 
+ SELECT split_part(a.date, '-'::text, 1) AS "year", split_part(a.date, '-'::text, 2) AS "month", sum(a.pageviews) AS pageviews, count(DISTINCT b.uvid) AS "unique visitors", count(DISTINCT b.uuid) AS visits, round((sum(b.exit) * 100)::double precision / count(DISTINCT b.uuid)::double precision, 2::numeric::numeric(18,0)) AS "bounce rate"
+   FROM ( SELECT adobe_sc_omniture_hub_v3.username, adobe_sc_omniture_hub_v3.post_visid_low, adobe_sc_omniture_hub_v3.post_visid_high, adobe_sc_omniture_hub_v3.visit_num, adobe_sc_omniture_hub_v3.visit_start_time_gmt, to_char(adobe_sc_omniture_hub_v3.date_time::timestamp without time zone, 'YYYY-MM-DD'::character varying::text) AS date, 
+                CASE
+                    WHEN adobe_sc_omniture_hub_v3.post_page_event = 0 THEN 1
+                    ELSE 0
+                END AS pageviews
+           FROM omniture_mt.adobe_sc_omniture_hub_v3
+          WHERE adobe_sc_omniture_hub_v3.exclude_hit::text = '0'::character varying::text AND adobe_sc_omniture_hub_v3.hit_source::integer <> 5 AND adobe_sc_omniture_hub_v3.hit_source::integer <> 8 AND adobe_sc_omniture_hub_v3.hit_source::integer <> 9) a
+   JOIN ( SELECT adobe_sc_omniture_hub_v3.post_visid_low::character varying AS post_visid_low, adobe_sc_omniture_hub_v3.post_visid_high::character varying AS post_visid_high, adobe_sc_omniture_hub_v3.visit_num::character varying AS visit_num, adobe_sc_omniture_hub_v3.visit_start_time_gmt, to_char(adobe_sc_omniture_hub_v3.date_time::timestamp without time zone, 'YYYY-MM-DD'::character varying::text) AS date, ((adobe_sc_omniture_hub_v3.post_visid_low::character varying::text || adobe_sc_omniture_hub_v3.post_visid_high::character varying::text) || adobe_sc_omniture_hub_v3.visit_num::character varying::text) || adobe_sc_omniture_hub_v3.visit_start_time_gmt::text AS uuid, (adobe_sc_omniture_hub_v3.post_visid_low::character varying::text || adobe_sc_omniture_hub_v3.post_visid_high::character varying::text)::character varying AS uvid, min(adobe_sc_omniture_hub_v3.visit_page_num::text) AS entry, 
+                CASE
+                    WHEN "max"(adobe_sc_omniture_hub_v3.visit_page_num::text) = 1::character varying::text THEN 1
+                    ELSE 0
+                END AS exit
+           FROM omniture_mt.adobe_sc_omniture_hub_v3
+          WHERE adobe_sc_omniture_hub_v3.exclude_hit::text = '0'::character varying::text AND adobe_sc_omniture_hub_v3.hit_source::integer <> 5 AND adobe_sc_omniture_hub_v3.hit_source::integer <> 7 AND adobe_sc_omniture_hub_v3.hit_source::integer <> 8 AND adobe_sc_omniture_hub_v3.hit_source::integer <> 9
+          GROUP BY adobe_sc_omniture_hub_v3.post_visid_low::character varying, adobe_sc_omniture_hub_v3.post_visid_high::character varying, adobe_sc_omniture_hub_v3.visit_num::character varying, adobe_sc_omniture_hub_v3.visit_start_time_gmt, to_char(adobe_sc_omniture_hub_v3.date_time::timestamp without time zone, 'YYYY-MM-DD'::character varying::text), ((adobe_sc_omniture_hub_v3.post_visid_low::character varying::text || adobe_sc_omniture_hub_v3.post_visid_high::character varying::text) || adobe_sc_omniture_hub_v3.visit_num::character varying::text) || adobe_sc_omniture_hub_v3.visit_start_time_gmt::text) b ON a.date = b.date AND a.post_visid_low::character varying::text = b.post_visid_low::text AND a.post_visid_high::character varying::text = b.post_visid_high::text AND a.visit_num::character varying::text = b.visit_num::text AND a.visit_start_time_gmt::text = b.visit_start_time_gmt::text
+  GROUP BY split_part(a.date, '-'::text, 1), split_part(a.date, '-'::text, 2)
+  ORDER BY split_part(a.date, '-'::text, 1), split_part(a.date, '-'::text, 2);
+
+COMMIT;
