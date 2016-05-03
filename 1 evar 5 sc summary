@@ -1,0 +1,44 @@
+--video name evar broken down for 5 sucess events
+--event lookup can be found 
+--also present are the top referers,marketing channel and device category
+CREATE OR REPLACE VIEW omniture_mt.summary_vw_2
+(
+  date,
+  device_category,
+  top_referers,
+  marketing_channels,
+  video_name,
+  video_views_e27,
+  video_milestone_25_e30,
+  video_milestone_50_e31,
+  video_milestone_75_e32,
+  video_milestone_completes_e28
+)
+AS 
+ SELECT a.date, a.device_category, a.top_referers, a.marketing_channels, a.video_name, sum(a.video_views_e27) AS video_views_e27, sum(a.video_milestone_25_e30) AS video_milestone_25_e30, sum(a.video_milestone_50_e31) AS video_milestone_50_e31, sum(a.video_milestone_75_e32) AS video_milestone_75_e32, sum(a.video_milestone_completes_e28) AS video_milestone_completes_e28
+   FROM ( SELECT adobe_sc_omniture_hub_v1.username, adobe_sc_omniture_hub_v1.post_visid_low, adobe_sc_omniture_hub_v1.post_visid_high, adobe_sc_omniture_hub_v1.visit_num, adobe_sc_omniture_hub_v1.visit_start_time_gmt, to_char(adobe_sc_omniture_hub_v1.date_time::timestamp without time zone, 'YYYY-MM-DD'::text) AS date, NULL::character varying AS device_category, adobe_sc_omniture_hub_v1.visit_referrer AS top_referers, adobe_sc_omniture_hub_v1.va_closer_detail AS marketing_channels, adobe_sc_omniture_hub_v1.post_evar51_video_name AS video_name, 
+                CASE
+                    WHEN adobe_sc_omniture_hub_v1.post_event_list::text ~~ '%226%'::text THEN 1
+                    ELSE 0
+                END AS video_views_e27, 
+                CASE
+                    WHEN adobe_sc_omniture_hub_v1.post_event_list::text ~~ '%229%'::text THEN 1
+                    ELSE 0
+                END AS video_milestone_25_e30, 
+                CASE
+                    WHEN adobe_sc_omniture_hub_v1.post_event_list::text ~~ '%230%'::text THEN 1
+                    ELSE 0
+                END AS video_milestone_50_e31, 
+                CASE
+                    WHEN adobe_sc_omniture_hub_v1.post_event_list::text ~~ '%231%'::text THEN 1
+                    ELSE 0
+                END AS video_milestone_75_e32, 
+                CASE
+                    WHEN adobe_sc_omniture_hub_v1.post_event_list::text ~~ '%227%'::text THEN 1
+                    ELSE 0
+                END AS video_milestone_completes_e28
+           FROM omniture_mt.adobe_sc_omniture_hub_v3 adobe_sc_omniture_hub_v1
+          WHERE adobe_sc_omniture_hub_v1.exclude_hit::text = '0'::text AND adobe_sc_omniture_hub_v1.hit_source::integer <> 5 AND adobe_sc_omniture_hub_v1.hit_source::integer <> 8 AND adobe_sc_omniture_hub_v1.hit_source::integer <> 9) a
+  GROUP BY a.date, a.device_category, a.top_referers, a.marketing_channels, a.video_name;
+
+COMMIT;
