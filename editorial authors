@@ -1,0 +1,23 @@
+SELECT (split_part(a.date,'-',1)||'-'||split_part(a.date,'-',2)) AS month, a.article_blog_date AS publishdate , a.article_blog_author AS author , count(Distinct a.article_blog_title) AS Articles, sum(a.pageviews) AS pageviews,count(DISTINCT b.uuid) AS visits
+   FROM ( SELECT adobe_sc_omniture_hub_v3.username, adobe_sc_omniture_hub_v3.post_visid_low, adobe_sc_omniture_hub_v3.post_visid_high, adobe_sc_omniture_hub_v3.visit_num, adobe_sc_omniture_hub_v3.visit_start_time_gmt, to_char(adobe_sc_omniture_hub_v3.date_time::timestamp without time zone, 'YYYY-MM-DD'::text) AS date, adobe_sc_omniture_hub_v3.post_prop6_article_blog_author AS article_blog_author, adobe_sc_omniture_hub_v3.post_prop3_article_blog_title AS article_blog_title,
+                CASE 
+                    WHEN char_length(adobe_sc_omniture_hub_v3.post_prop5_article_blog_date) = 24 THEN (split_part(adobe_sc_omniture_hub_v3.post_prop5_article_blog_date,'-',2)||'-'||split_part(adobe_sc_omniture_hub_v3.post_prop5_article_blog_date,'-',1)) 
+                    WHEN char_length(adobe_sc_omniture_hub_v3.post_prop5_article_blog_date) = 20 THEN (regexp_substr(adobe_sc_omniture_hub_v3.post_prop5_article_blog_date , '..',5 )||'-'||regexp_substr(adobe_sc_omniture_hub_v3.post_prop5_article_blog_date , '^....')) 
+                    ELSE (regexp_substr(adobe_sc_omniture_hub_v3.post_prop5_article_blog_date , '^..')||'-'||regexp_substr(adobe_sc_omniture_hub_v3.post_prop5_article_blog_date , '....',7 )) 
+                END AS article_blog_date,
+                CASE
+                    WHEN adobe_sc_omniture_hub_v3.post_page_event = 0 THEN 1
+                    ELSE 0
+                END AS pageviews
+           FROM omniture_mt.adobe_sc_omniture_hub_v3
+          WHERE adobe_sc_omniture_hub_v3.exclude_hit::text = '0'::text AND adobe_sc_omniture_hub_v3.hit_source::integer <> 5 AND adobe_sc_omniture_hub_v3.hit_source::integer <> 8 AND adobe_sc_omniture_hub_v3.hit_source::integer <> 9 ) a
+   JOIN ( SELECT adobe_sc_omniture_hub_v3.post_visid_low::character varying AS post_visid_low, adobe_sc_omniture_hub_v3.post_visid_high::character varying AS post_visid_high, adobe_sc_omniture_hub_v3.visit_num::character varying AS visit_num, adobe_sc_omniture_hub_v3.visit_start_time_gmt, to_char(adobe_sc_omniture_hub_v3.date_time::timestamp without time zone, 'YYYY-MM-DD'::text) AS date, ((adobe_sc_omniture_hub_v3.post_visid_low::character varying::text || adobe_sc_omniture_hub_v3.post_visid_high::character varying::text) || adobe_sc_omniture_hub_v3.visit_num::character varying::text) || adobe_sc_omniture_hub_v3.visit_start_time_gmt::text AS uuid, min(adobe_sc_omniture_hub_v3.visit_page_num::text) AS entry, 
+                CASE
+                    WHEN "max"(adobe_sc_omniture_hub_v3.visit_page_num::text) = 1::text THEN 1
+                    ELSE 0
+                END AS EXIT
+           FROM omniture_mt.adobe_sc_omniture_hub_v3
+          WHERE adobe_sc_omniture_hub_v3.exclude_hit::text = '0'::text AND adobe_sc_omniture_hub_v3.hit_source::integer <> 5 AND adobe_sc_omniture_hub_v3.hit_source::integer <> 7 AND adobe_sc_omniture_hub_v3.hit_source::integer <> 8 AND adobe_sc_omniture_hub_v3.hit_source::integer <> 9
+          GROUP BY adobe_sc_omniture_hub_v3.post_visid_low::character varying, adobe_sc_omniture_hub_v3.post_visid_high::character varying, adobe_sc_omniture_hub_v3.visit_num::character varying, adobe_sc_omniture_hub_v3.visit_start_time_gmt, to_char(adobe_sc_omniture_hub_v3.date_time::timestamp without time zone, 'YYYY-MM-DD'::text), ((adobe_sc_omniture_hub_v3.post_visid_low::character varying::text || adobe_sc_omniture_hub_v3.post_visid_high::character varying::text) || adobe_sc_omniture_hub_v3.visit_num::character varying::text) || adobe_sc_omniture_hub_v3.visit_start_time_gmt::text) b ON a.date = b.date AND a.post_visid_low::text = b.post_visid_low::text AND a.post_visid_high::text = b.post_visid_high::text AND a.visit_num::text = b.visit_num::text AND a.visit_start_time_gmt::text = b.visit_start_time_gmt::text
+  GROUP BY month, publishdate, author
+  ORDER BY month, author, publishdate;
