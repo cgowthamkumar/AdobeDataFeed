@@ -1,0 +1,13 @@
+SELECT t.date, t.prop, t.inst, t.pageviews, t.visits, t.unique_visitors
+   FROM ( SELECT date, prop, pageviews, inst, visits, unique_visitors, row_number() over(partition by date order by inst desc) as st
+            FROM (SELECT a.date, a.prop, sum(a.pageviews) AS pageviews, count(a.prop) AS inst,count(DISTINCT (a.post_visid_low::character varying::text || a.post_visid_high::character varying::text)) AS unique_visitors, count(DISTINCT ((a.post_visid_low::character varying::text || a.post_visid_high::character varying::text) || a.visit_num::character varying::text) || a.visit_start_time_gmt::text) AS visits
+                FROM ( SELECT adobe_sc_omniture_hub_v1.username, adobe_sc_omniture_hub_v1.post_prop1_url as prop , adobe_sc_omniture_hub_v1.post_visid_low, adobe_sc_omniture_hub_v1.post_visid_high, adobe_sc_omniture_hub_v1.visit_num, adobe_sc_omniture_hub_v1.visit_start_time_gmt, to_char( date_trunc('month',adobe_sc_omniture_hub_v1.date_time::timestamp)::timestamp without time zone, 'YYYY-MM-DD'::character varying::text) AS date, adobe_sc_omniture_hub_v1.daily_visitor , adobe_sc_omniture_hub_v1.hourly_visitor , adobe_sc_omniture_hub_v1.monthly_visitor, adobe_sc_omniture_hub_v1.weekly_visitor,
+                    CASE
+                        WHEN adobe_sc_omniture_hub_v1.post_page_event = 0 THEN 1
+                        ELSE 0
+                    END AS pageviews
+                 FROM omniture_mt.adobe_sc_omniture_hub_v1
+                WHERE adobe_sc_omniture_hub_v1.exclude_hit::text = '0'::character varying::text AND adobe_sc_omniture_hub_v1.hit_source::integer <> 5 AND adobe_sc_omniture_hub_v1.hit_source::integer <> 8 AND adobe_sc_omniture_hub_v1.hit_source::integer <> 9) a
+      GROUP BY a.date, a.prop
+      ORDER BY a.date, a.prop ) ) t
+   where t.st <= 20;
