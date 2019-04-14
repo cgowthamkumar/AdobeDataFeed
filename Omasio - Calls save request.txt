@@ -1,0 +1,155 @@
+#cURL call to generate the token
+curl https://vault.omise.co/tokens -X POST -u pkey_test_5fj3r76g0v52kb7joay: -d "card[name]=Test Account Gowtham" -d "card[city]=Berlin" -d "card[postal_code]=13086" -d "card[number]=4242424242424242" -d "card[security_code]=123" -d "card[expiration_month]=2" -d "card[expiration_year]=2020"
+
+#JSON Response with token to use for charging the card
+{
+  "object": "token",
+  "id": "tokn_test_5fj51xoytejk4kzp3y9",
+  "livemode": false,
+  "location": "https://vault.omise.co/tokens/tokn_test_5fj51xoytejk4kzp3y9",
+  "used": false,
+  "card": {
+    "object": "card",
+    "id": "card_test_5fj51xoxxo748yg063n",
+    "livemode": false,
+    "country": "gb",
+    "city": "Berlin",
+    "postal_code": "13086",
+    "financing": "credit",
+    "bank": "STRIPE PAYMENTS UK LIMITED",
+    "last_digits": "4242",
+    "brand": "Visa",
+    "expiration_month": 2,
+    "expiration_year": 2020,
+    "fingerprint": "f+s/SGBahUUmXa9wYhzQN7s8rH8jQsZqc6G0WJpFfEQ=",
+    "name": "Test Account Gowtham",
+    "security_code_check": true,
+    "created": "2019-04-10T20:02:23Z"
+  },
+  "created": "2019-04-10T20:02:23Z"
+}
+
+#cURL call to use the token above to charge the card
+curl https://api.omise.co/charges -X POST -u skey_test_5fj3r76g057k0pbo42u: -d "description=Charging test 1234" -d "amount=54400" -d "currency=thb" -d "return_uri=http://www.testwebsite.com/1234/successful" -d "card=tokn_test_5fj51xoytejk4kzp3y9"
+
+#JSON Response after charging the test card
+{
+  "object": "charge",
+  "id": "chrg_test_5fj536tsfcimaj8ay6e",
+  "livemode": false,
+  "location": "/charges/chrg_test_5fj536tsfcimaj8ay6e",
+  "amount": 54400,
+  "currency": "thb",
+  "funding_amount": 54400,
+  "funding_currency": "thb",
+  "description": "Charging test 1234",
+  "metadata": {
+  },
+  "status": "successful",
+  "capture": true,
+  "authorized": true,
+  "schedule": null,
+  "reversed": false,
+  "reversed_at": null,
+  "voided": false,
+  "paid": true,
+  "paid_at": "2019-04-10T20:05:57Z",
+  "transaction": "trxn_test_5fj536vobdcs1rb6moe",
+  "refunded": 0,
+  "refunds": {
+    "object": "list",
+    "from": "1970-01-01T00:00:00Z",
+    "to": "2019-04-10T20:05:57Z",
+    "offset": 0,
+    "limit": 20,
+    "total": 0,
+    "order": "chronological",
+    "location": "/charges/chrg_test_5fj536tsfcimaj8ay6e/refunds",
+    "data": [
+
+    ]
+  },
+  "return_uri": "http://www.testwebsite.com/1234/successful",
+  "failure_code": null,
+  "failure_message": null,
+  "card": {
+    "object": "card",
+    "id": "card_test_5fj51xoxxo748yg063n",
+    "livemode": false,
+    "country": "gb",
+    "city": "Berlin",
+    "postal_code": "13086",
+    "financing": "credit",
+    "bank": "STRIPE PAYMENTS UK LIMITED",
+    "last_digits": "4242",
+    "brand": "Visa",
+    "expiration_month": 2,
+    "expiration_year": 2020,
+    "fingerprint": "f+s/SGBahUUmXa9wYhzQN7s8rH8jQsZqc6G0WJpFfEQ=",
+    "name": "Test Account Gowtham",
+    "security_code_check": true,
+    "created": "2019-04-10T20:02:23Z"
+  },
+  "customer": null,
+  "ip": null,
+  "dispute": null,
+  "created": "2019-04-10T20:05:57Z",
+  "source": null,
+  "disputable": true,
+  "capturable": false,
+  "reversible": false,
+  "refundable": true,
+  "reference": "paym_test_5fj536tyfojjf013qzz",
+  "authorize_uri": "https://api.omise.co/payments/paym_test_5fj536tyfojjf013qzz/authorize"
+}
+
+#cURL call to request refund of 200 TBH
+curl https://api.omise.co/charges/chrg_test_5fj536tsfcimaj8ay6e/refunds -X POST -u skey_test_5fj3r76g057k0pbo42u: -d "amount=20000"
+
+#JSON Response after request of refund
+{
+  "object": "refund",
+  "id": "rfnd_test_5fj554vk0do8lp18xfz",
+  "location": "/charges/chrg_test_5fj536tsfcimaj8ay6e/refunds/rfnd_test_5fj554vk0do8lp18xfz",
+  "created": "2019-04-10T20:11:28Z",
+  "amount": 20000,
+  "currency": "thb",
+  "voided": false,
+  "charge": "chrg_test_5fj536tsfcimaj8ay6e",
+  "transaction": "trxn_test_5fj554vof5zq3t4a0zy",
+  "metadata": {
+  }
+}
+
+#cURL call to request a transfer of 200 TBH
+curl https://api.omise.co/transfers -X POST -u skey_test_5fj3r76g057k0pbo42u: -d "amount=30000"
+
+#JSON Response after creating a transfer request
+{
+  "object": "transfer",
+  "id": "trsf_test_5fj56en1nuriym7t976",
+  "livemode": false,
+  "location": "/transfers/trsf_test_5fj56en1nuriym7t976",
+  "recipient": "recp_test_5fj3r76rss3hak8wgxu",
+  "bank_account": {
+    "object": "bank_account",
+    "brand": "test",
+    "last_digits": "6789",
+    "name": "DEFAULT BANK ACCOUNT",
+    "created": "2019-04-10T17:49:37Z"
+  },
+  "sent": false,
+  "paid": false,
+  "amount": 30000,
+  "currency": "thb",
+  "fee": 3000,
+  "fail_fast": false,
+  "failure_code": null,
+  "failure_message": null,
+  "transaction": null,
+  "created": "2019-04-10T20:15:05Z",
+  "sent_at": null,
+  "paid_at": null,
+  "metadata": {
+  }
+}
